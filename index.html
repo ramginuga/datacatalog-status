@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Data Catalog</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #e8f4fd 0%, #d0e8f7 50%, #c4dff0 100%); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* Top nav bar */
+  .topnav { background: white; height: 56px; display: flex; align-items: center; padding: 0 20px; border-bottom: 1px solid #e0e0e0; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo svg { width: 36px; height: 36px; }
+  .logo-text { font-size: 18px; font-weight: 400; letter-spacing: 8px; color: #0078d4; font-family: 'Segoe UI', sans-serif; }
+  .topnav-right { margin-left: auto; display: flex; align-items: center; gap: 16px; color: #605e5c; font-size: 14px; }
+  .topnav-right .avatar { width: 32px; height: 32px; border-radius: 50%; background: #0078d4; color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .topnav-icon { width: 20px; height: 20px; fill: #605e5c; cursor: pointer; }
+
+  /* Layout */
+  .layout { display: flex; flex: 1; }
+
+  /* Sidebar */
+  .sidebar { width: 200px; background: white; padding: 16px 0; border-right: 1px solid #e0e0e0; }
+  .sidebar-item { display: flex; align-items: center; gap: 12px; padding: 12px 24px; color: #323130; font-size: 14px; cursor: pointer; }
+  .sidebar-item.active { background: #0078d4; color: white; border-radius: 0 24px 24px 0; margin-right: 16px; }
+  .sidebar-item svg { width: 22px; height: 22px; fill: currentColor; }
+
+  /* Main content */
+  .main { flex: 1; padding: 48px 60px; }
+  .welcome { font-size: 28px; font-weight: 300; color: white; margin-bottom: 24px; text-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  /* Error overlay - replaces normal content */
+  .error-banner { background: #fde7e9; border: 1px solid #d13438; border-radius: 8px; padding: 32px 40px; margin-bottom: 24px; }
+  .error-banner-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .error-banner-icon { width: 32px; height: 32px; }
+  .error-banner-icon svg { width: 32px; height: 32px; }
+  .error-banner-title { font-size: 20px; font-weight: 600; color: #a80000; }
+  .error-banner-msg { font-size: 14px; color: #605e5c; line-height: 1.6; margin-bottom: 20px; }
+
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; background: white; border: 1px solid #d13438; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; color: #d13438; margin-bottom: 16px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #d13438; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+  .error-details-grid { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; font-size: 13px; margin-bottom: 20px; }
+  .error-details-grid dt { color: #323130; font-weight: 600; }
+  .error-details-grid dd { color: #605e5c; font-family: Consolas, monospace; font-size: 12px; }
+
+  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .card { background: white; border-radius: 8px; padding: 32px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+  .card-title { font-size: 16px; font-weight: 600; color: #323130; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* Disabled search bar */
+  .search-bar { background: white; border-radius: 8px; padding: 12px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 32px; opacity: 0.5; pointer-events: none; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+  .search-bar svg { width: 18px; height: 18px; fill: #a19f9d; }
+  .search-bar span { color: #a19f9d; font-size: 14px; }
+
+  /* Greyed out cards */
+  .card.disabled { opacity: 0.4; pointer-events: none; }
+
+  /* Clickable area */
+  .main { cursor: pointer; }
+
+  /* Prank overlay */
+  .prank-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.88); z-index:1000; align-items:center; justify-content:center; flex-direction:column; }
+  .prank-overlay.show { display:flex; }
+  .prank-emoji { font-size:100px; animation: pop 0.5s ease; }
+  .prank-text { font-size:52px; color:white; font-weight:700; margin-top:16px; animation: pop 0.6s ease; }
+  .prank-sub { font-size:22px; color:#ffd700; margin-top:12px; animation: pop 0.8s ease; }
+  @keyframes pop { 0%{transform:scale(0)} 60%{transform:scale(1.15)} 100%{transform:scale(1)} }
+  .confetti { position:fixed; top:-10px; z-index:1001; animation:fall linear forwards; pointer-events:none; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+
+<!-- Top nav -->
+<div class="topnav">
+  <div class="logo">
+    <svg viewBox="0 0 36 36" fill="none">
+      <path d="M4 26l14-8 14 8-14 8-14-8z" fill="#0078d4" opacity="0.5"/>
+      <path d="M4 20l14-8 14 8-14 8-14-8z" fill="#0078d4" opacity="0.7"/>
+      <path d="M4 14l14-8 14 8-14 8-14-8z" fill="#0078d4"/>
+    </svg>
+    <span class="logo-text">C A T A L O G</span>
+  </div>
+  <div class="topnav-right">
+    <svg class="topnav-icon" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14.5a6.5 6.5 0 110-13 6.5 6.5 0 010 13zM10 6a1 1 0 011 1v3.586l2.207 2.207a1 1 0 01-1.414 1.414l-2.5-2.5A1 1 0 019 11V7a1 1 0 011-1z"/></svg>
+    <svg class="topnav-icon" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.586l-1.707 1.707A1 1 0 003 15h14a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM8 16a2 2 0 104 0H8z"/></svg>
+    <div class="avatar">KG</div>
+    <span>Karthik Ginuga (RGINUGA)</span>
+  </div>
+</div>
+
+<!-- Layout -->
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-item active">
+      <svg viewBox="0 0 24 24"><path d="M3 13h1l5-6 4 4 5-6h2v-2h-3.28l-3.72 4.47L4.28 3H1v2h1l5 6z"/><path d="M3 13v8h18v-8H3zm2 6v-4h14v4H5z"/></svg>
+      Home
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+      Explore
+    </div>
+    <div class="sidebar-item">
+      <svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+      Tags
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main" onclick="showPrank()">
+    <div class="welcome">Welcome, Karthik Ginuga (RGINUGA)!</div>
+
+    <!-- Search bar (disabled) -->
+    <div class="search-bar">
+      <svg viewBox="0 0 20 20"><path d="M8.5 3a5.5 5.5 0 014.383 8.823l4.147 4.147a.75.75 0 01-1.06 1.06l-4.147-4.147A5.5 5.5 0 118.5 3zm0 1.5a4 4 0 100 8 4 4 0 000-8z"/></svg>
+      <span>Search across clusters, databases, tables, schemas, and tags</span>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner">
+      <div class="status-pill"><span class="status-dot"></span> SERVICE OUTAGE — ACTIVE</div>
+      <div class="error-banner-header">
+        <div class="error-banner-icon">
+          <svg viewBox="0 0 32 32" fill="none">
+            <circle cx="16" cy="16" r="15" stroke="#d13438" stroke-width="2" fill="#fde7e9"/>
+            <rect x="14" y="8" width="4" height="12" rx="1" fill="#d13438"/>
+            <rect x="14" y="22" width="4" height="4" rx="1" fill="#d13438"/>
+          </svg>
+        </div>
+        <div class="error-banner-title">Data Catalog is experiencing a major outage</div>
+      </div>
+      <div class="error-banner-msg">
+        All production services are currently unreachable. The API, web application, worker, and orchestrator services are down due to an infrastructure issue in the primary Kubernetes cluster. The on-call engineer has been paged and is investigating.
+      </div>
+      <div class="error-details-grid">
+        <dt>Incident</dt><dd>ICM-782451039</dd>
+        <dt>Start Time</dt><dd>2026-04-01T19:38:45Z (12:38 PM PT)</dd>
+        <dt>Region</dt><dd>West US 2 (ciso-k8s-prd-wus2)</dd>
+        <dt>Severity</dt><dd style="color:#d13438;font-weight:600;">Sev2 — Customer Impact</dd>
+        <dt>Root Cause</dt><dd>AKS node pool replacement deleted all nodes simultaneously</dd>
+      </div>
+      <button onclick="event.stopPropagation(); showPrank()" style="background:#d13438;color:white;border:none;padding:10px 28px;border-radius:4px;font-size:14px;font-weight:600;cursor:pointer;">Retry Connection</button>
+    </div>
+
+    <!-- Greyed out cards -->
+    <div class="cards">
+      <div class="card disabled">
+        <div class="card-title">Useful links</div>
+        <div style="color:#605e5c;font-size:14px;">
+          <p style="margin-bottom:12px"><strong>Documentation & User Guide (Access in Corp)</strong><br><span style="font-size:13px;">Learn how to search, understand, and contribute to the Data Catalog.</span></p>
+          <p><strong>Data Pursuits Request</strong><br><span style="font-size:13px;">Need data onboarding or enrichment? Submit an ADO item.</span></p>
+        </div>
+      </div>
+      <div class="card disabled">
+        <div class="card-title">Share feedback about Data Catalog</div>
+        <div style="text-align:center;padding:20px;color:#a19f9d;">
+          <div style="font-size:48px;margin-bottom:12px;">🔧</div>
+          <p style="font-size:14px;">Service unavailable. Feedback form cannot be loaded.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Prank overlay -->
+<div class="prank-overlay" id="prank">
+  <div class="prank-emoji">🎉</div>
+  <div class="prank-text">Happy April 1st!</div>
+  <div class="prank-sub">Relax, production is fine. You just got pranked. 😄</div>
+</div>
+
+<script>
+setTimeout(showPrank, 5000);
+function showPrank() {
+  document.getElementById('prank').classList.add('show');
+  for (let i = 0; i < 50; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random()*100+'vw';
+    c.style.animationDuration = (2+Math.random()*3)+'s';
+    c.style.animationDelay = Math.random()*2+'s';
+    c.style.fontSize = (14+Math.random()*18)+'px';
+    c.textContent = ['🎊','🎉','🥳','✨','🎈','🍾','😂'][Math.floor(Math.random()*7)];
+    document.body.appendChild(c);
+  }
+}
+</script>
+</body>
+</html>
